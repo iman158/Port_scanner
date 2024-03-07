@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 
 from scapy.all import ICMP, IP, TCP, sr1, RandShort
+import socket
+
+def get_local_ip():
+    try:
+        # Create a socket connection to a remote host (in this case, Google's public DNS)
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except socket.error:
+        return "127.0.0.1"
 
 def create_icmp_packet(host):
     return IP(dst=host)/ICMP()
@@ -33,12 +45,20 @@ def port_scanner(host, port):
 
 if __name__ == "__main__":
     try:
-        host = input("Enter the host to scan: ")
+        host = input("Enter the host to scan (default is localhost): ") or get_local_ip()
+        print(f"Scanning ports for host: {host}")
+
         start_port = int(input("Enter the starting port: "))
         end_port = int(input("Enter the ending port: "))
 
         for port in range(start_port, end_port + 1):
             port_scanner(host, port)
+
+        local_port = input("\nDo you want to auto-detect the local host's open port? (y/n): ")
+        if local_port.lower() == 'y':
+            local_host = "127.0.0.1"
+            for port in range(1, 1025):  # Check common ports
+                port_scanner(local_host, port)
 
     except ValueError:
         print("Invalid input. Please enter a valid numerical value.")
